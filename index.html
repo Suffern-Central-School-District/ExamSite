@@ -18,23 +18,23 @@ body {
     line-height: 1.5;
 }
 
-#editor {
-    width: 100%;
-    outline: none;
-    min-height: 9in;
-}
-
-#printButton {
+#toolbar {
     position: fixed;
     top: 10px;
     right: 10px;
-    padding: 8px 14px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+}
+
+button {
+    padding: 6px 12px;
     font-size: 14px;
     cursor: pointer;
 }
 
 @media print {
-    #printButton {
+    #toolbar {
         display: none;
     }
 
@@ -42,22 +42,111 @@ body {
         padding: 0;
     }
 }
+
+#editor {
+    width: 100%;
+    outline: none;
+    min-height: 9in;
+    margin-top: 50px; /* space for toolbar */
+}
 </style>
 
 <script>
+let editorHistory = [];
+let historyIndex = -1;
+let clipboard = "";
+
+// Save state to history
+function saveHistory() {
+    // Trim forward history if undo happened
+    if (historyIndex < editorHistory.length - 1) {
+        editorHistory = editorHistory.slice(0, historyIndex + 1);
+    }
+    editorHistory.push(document.getElementById('editor').innerHTML);
+    historyIndex++;
+}
+
+// Undo function
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        document.getElementById('editor').innerHTML = editorHistory[historyIndex];
+    }
+}
+
+// Copy selected text within editor
+function copyText() {
+    const editor = document.getElementById('editor');
+    const selection = window.getSelection();
+    if (editor.contains(selection.anchorNode)) {
+        clipboard = selection.toString();
+    }
+}
+
+// Paste text at cursor
+function pasteText() {
+    const editor = document.getElementById('editor');
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(clipboard));
+    saveHistory();
+}
+
+// Print document
 function printDocument() {
     window.print();
 }
 
+// Initialize editor history
+function initHistory() {
+    saveHistory();
+}
+
+// Listen for changes to save history
+function attachHistoryListener() {
+    const editor = document.getElementById('editor');
+    editor.addEventListener('input', saveHistory);
+}
+
+// Disable unwanted keys
+document.addEventListener('keydown', function(e) {
+    // Block reload F5 / Ctrl+R / Command+R
+    if (
+        e.key === 'F5' ||
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')
+    ) {
+        e.preventDefault();
+    }
+
+    // Block Ctrl+A / Command+A
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+    }
+});
+
 // Disable right-click
 document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Initialize on load
+window.onload = function() {
+    initHistory();
+    attachHistoryListener();
+};
 </script>
 
 </head>
 
 <body>
 
-<button id="printButton" onclick="printDocument()">Print</button>
+<div id="toolbar">
+    <button onclick="copyText()">Copy</button>
+    <button onclick="pasteText()">Paste</button>
+    <button onclick="undo()">Undo</button>
+    <button onclick="printDocument()">Print</button>
+</div>
 
 <div id="editor"
      contenteditable="true"
@@ -66,8 +155,7 @@ document.addEventListener('contextmenu', event => event.preventDefault());
      autocorrect="off"
      autocapitalize="off">
 
-Suffern High School<br>
-* * *<br>
+<span contenteditable="false">Suffern High School<br>* * *</span><br>
 Name:<br>
 Grade:<br>
 Teachers Name:<br>
