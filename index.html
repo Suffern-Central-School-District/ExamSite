@@ -24,6 +24,7 @@ body {
     right: 10px;
     display: flex;
     gap: 8px;
+    align-items: center;
     z-index: 1000;
 }
 
@@ -31,6 +32,12 @@ button {
     padding: 6px 12px;
     font-size: 14px;
     cursor: pointer;
+}
+
+#battery {
+    min-width: 50px;
+    text-align: center;
+    font-size: 14pt;
 }
 
 @media print {
@@ -54,11 +61,10 @@ button {
 <script>
 let editorHistory = [];
 let historyIndex = -1;
-let clipboard = "";
+let clipboard = ""; // internal clipboard
 
-// Save state to history
+// Save editor state for undo
 function saveHistory() {
-    // Trim forward history if undo happened
     if (historyIndex < editorHistory.length - 1) {
         editorHistory = editorHistory.slice(0, historyIndex + 1);
     }
@@ -79,11 +85,14 @@ function copyText() {
     const editor = document.getElementById('editor');
     const selection = window.getSelection();
     if (editor.contains(selection.anchorNode)) {
-        clipboard = selection.toString();
+        const range = selection.getRangeAt(0);
+        const div = document.createElement('div');
+        div.appendChild(range.cloneContents());
+        clipboard = div.innerHTML;
     }
 }
 
-// Paste text at cursor
+// Paste internal clipboard at cursor
 function pasteText() {
     const editor = document.getElementById('editor');
     editor.focus();
@@ -91,7 +100,13 @@ function pasteText() {
     if (!sel.rangeCount) return;
     const range = sel.getRangeAt(0);
     range.deleteContents();
-    range.insertNode(document.createTextNode(clipboard));
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = clipboard;
+    const frag = document.createDocumentFragment();
+    while (tempDiv.firstChild) {
+        frag.appendChild(tempDiv.firstChild);
+    }
+    range.insertNode(frag);
     saveHistory();
 }
 
@@ -111,29 +126,41 @@ function attachHistoryListener() {
     editor.addEventListener('input', saveHistory);
 }
 
-// Disable unwanted keys
+// Block reload keys and select-all
 document.addEventListener('keydown', function(e) {
-    // Block reload F5 / Ctrl+R / Command+R
-    if (
-        e.key === 'F5' ||
-        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')
-    ) {
-        e.preventDefault();
-    }
+    if (e.key === 'F5') { e.preventDefault(); e.stopPropagation(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') { e.preventDefault(); e.stopPropagation(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); e.stopPropagation(); }
+});
 
-    // Block Ctrl+A / Command+A
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-        e.preventDefault();
-    }
+// Prevent page reload via menu or other triggers
+window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
 });
 
 // Disable right-click
 document.addEventListener('contextmenu', event => event.preventDefault());
 
-// Initialize on load
+// Battery indicator
+async function updateBattery() {
+    if (!navigator.getBattery) return; // not supported
+    const battery = await navigator.getBattery();
+    function refresh() {
+        const level = Math.round(battery.level * 100);
+        const charging = battery.charging ? "⚡" : "";
+        document.getElementById('battery').textContent = `🔋 ${level}%${charging}`;
+    }
+    refresh();
+    battery.addEventListener('levelchange', refresh);
+    battery.addEventListener('chargingchange', refresh);
+}
+
+// Initialize all on load
 window.onload = function() {
     initHistory();
     attachHistoryListener();
+    updateBattery();
 };
 </script>
 
@@ -146,6 +173,7 @@ window.onload = function() {
     <button onclick="pasteText()">Paste</button>
     <button onclick="undo()">Undo</button>
     <button onclick="printDocument()">Print</button>
+    <span id="battery">🔋 --%</span>
 </div>
 
 <div id="editor"
@@ -155,7 +183,7 @@ window.onload = function() {
      autocorrect="off"
      autocapitalize="off">
 
-<span contenteditable="false">Suffern High School<br>* * *</span><br>
+Suffern High School<br>* * *<br>
 Name:<br>
 Grade:<br>
 Teachers Name:<br>
