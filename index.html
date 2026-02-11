@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Exam Editor</title>
+
+<style>
+@page {
+    size: 8.5in 11in;
+    margin: 1in;
+}
+
+body {
+    margin: 0;
+    padding: 1in;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 14pt;
+    line-height: 1.5;
+}
+
+#editor {
+    width: 100%;
+    outline: none;
+    min-height: 9in;
+}
+
+#printButton {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+@media print {
+    #printButton {
+        display: none;
+    }
+
+    body {
+        padding: 0;
+    }
+}
+</style>
+
+<script>
+function printDocument() {
+    window.print();
+}
+
+// Disable right-click
+document.addEventListener('contextmenu', event => event.preventDefault());
+</script>
+
+</head>
+
+<body>
+
+<button id="printButton" onclick="printDocument()">Print</button>
+
+<div id="editor"
+     contenteditable="true"
+     spellcheck="false"
+     autocomplete="off"
+     autocorrect="off"
+     autocapitalize="off">
+
+Suffern High School<br>
+* * *<br>
+Name:<br>
+Grade:<br>
+Teachers Name:<br>
+Date:<br>
+Exam:<br>
+* * *<br><br>
+
+</div>
+
+</body>
+</html>

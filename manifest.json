@@ -1,0 +1,10 @@
+{
+  "name": "Exam Editor IWA",
+  "version": "1.0",
+  "manifest_version": 1,
+  "isolated": true,
+  "start_url": "/index.html",
+  "scope": "/",
+  "offline_enabled": true,
+  "display": "standalone"
+}
