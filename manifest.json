@@ -6,5 +6,6 @@
   "start_url": "/index.html",
   "scope": "/",
   "offline_enabled": true,
-  "display": "standalone"
+  "display": "standalone",
+  "id": "com.suffern.exameditor"
 }
